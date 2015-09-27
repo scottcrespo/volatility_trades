@@ -55,3 +55,7 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# volatility_trades
+logs/
+tmpfile.csv

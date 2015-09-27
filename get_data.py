@@ -1,4 +1,4 @@
-import requests, datetime, os, json, time, csv, sys, re
+import requests, datetime, os, json, time, csv, sys, re, logging
 
 URL = "http://real-chart.finance.yahoo.com/table.csv"
 
@@ -6,13 +6,19 @@ NOW = datetime.datetime.now()
 
 WORKDIR = os.path.abspath(os.path.dirname(__file__))
 
-LOGFILE = os.path.join(WORKDIR, "logs", NOW.strftime("%Y-%m-%d %H:%M:%S")+'.txt')
+ERRLOG = os.path.join(WORKDIR, "logs", NOW.strftime("%Y-%m-%d %H:%M:%S")+'-error.log')
+
+SYSLOGPATH = os.path.join(WORKDIR, "logs", NOW.strftime("%Y-%m-%d %H:%M:%S")+'-info.log')
 
 RAWDATAFILE = os.path.join(WORKDIR, "data/historical_data.csv")
 
 TMPDATAFILE = os.path.join(WORKDIR, "data/tmpfile.csv")
 
 FOO = "http://real-chart.finance.yahoo.com/table.csv?s=YHOO&a=08&b=23&c=2014&d=08&e=23&f=2015&g=d&ignore=.csv"
+
+FORMAT = "%(asctime)-15s %(message)s"
+
+logging.basicConfig(filename=SYSLOGPATH, format=FORMAT, level=logging.DEBUG)
 
 def main():
     """
@@ -25,10 +31,17 @@ def main():
     tickers = get_tickers()
     # iterate through a list of tickers and retrieve historical data
     for i, ticker in enumerate(tickers[:3], start=0):
+        extra = {'ticker':ticker}
         # abort if we encounter more than 10 errors
         if errors > 10:
-            sys.exit("get_data.py exceeded error threshold")
-        print "Retrieving data for ticker %s" % ticker
+            msg = "%s - get_data.py exceeded error threshold" % ticker
+            logging.fatal(msg)
+            sys.exit(msg)
+
+        # log that next iteration is beginning
+        msg = "%s - Retrieving data for stock %d out of %d" % (ticker, i+1, len(tickers))
+        print msg
+        logging.info(msg, extra=extra)
 
         # params are set to retrieve daily close data for S&P 500 stocks over
         # the past year
@@ -54,9 +67,12 @@ def main():
         # didn't retrieve so we can grab it later. Also, in the event the Error
         # is the result of request throttling, the system sleeps for over 1 minute
         except Exception as e:
+            msg = "%s - Failed to retrieve data" % ticker
+            logging.error(msg)
+            logging.error(e)
             print e
             errors += 1
-            with open(LOGFILE, 'a+') as log:
+            with open(ERRLOGFILE, 'a+') as log:
                 log.write(ticker + '\n')
             time.sleep(65)
             continue
@@ -81,18 +97,18 @@ def main():
                 with open(RAWDATAFILE, 'a+') as f:
                     f.write(line)
         # sleep for a while before pulling another data set
-        time.sleep(20)
+        time.sleep(1)
 
 def get_tickers():
     """
     Reads json data representing members of the S&P, and returns list of ticker symbols
     """
-    
+
     with open(os.path.join(WORKDIR,"data/members.json")) as f:
         members = json.loads(f.read())
 
     return [stock['Symbol'] for stock in members]
 
 if __name__ == '__main__':
-
+    logging.info("Starting process")
     main()
