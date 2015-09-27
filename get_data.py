@@ -15,7 +15,10 @@ TMPDATAFILE = os.path.join(WORKDIR, "data/tmpfile.csv")
 FOO = "http://real-chart.finance.yahoo.com/table.csv?s=YHOO&a=08&b=23&c=2014&d=08&e=23&f=2015&g=d&ignore=.csv"
 
 def main():
-
+    """
+    Retrieves daily closing prices, year-to-date for all members of the S&P 500, and write
+    the data to file
+    """
     # Track number of errors that result from request errors
     errors = 0
     # Get a list of tickers that we want to retrieve
@@ -81,7 +84,10 @@ def main():
         time.sleep(20)
 
 def get_tickers():
-
+    """
+    Reads json data representing members of the S&P, and returns list of ticker symbols
+    """
+    
     with open(os.path.join(WORKDIR,"data/members.json")) as f:
         members = json.loads(f.read())
 
