@@ -10,8 +10,6 @@ LOGFILE = os.path.join(WORKDIR, "logs", NOW.strftime("%Y-%m-%d %H:%M:%S")+'.txt'
 
 RAWDATAFILE = os.path.join(WORKDIR, "data/historical_data.csv")
 
-CLEANDATAFILE = os.path.join(WORKDIR, "data/historical_data_clean.csv")
-
 TMPDATAFILE = os.path.join(WORKDIR, "data/tmpfile.csv")
 
 FOO = "http://real-chart.finance.yahoo.com/table.csv?s=YHOO&a=08&b=23&c=2014&d=08&e=23&f=2015&g=d&ignore=.csv"
@@ -28,6 +26,7 @@ def main():
         if errors > 10:
             sys.exit("get_data.py exceeded error threshold")
         print "Retrieving data for ticker %s" % ticker
+
         # params are set to retrieve daily close data for S&P 500 stocks over
         # the past year
         params= {
@@ -42,7 +41,9 @@ def main():
             'ignore': '.csv',
         }
 
-        # wrap the request in a try clause in case we receive an error
+        # wrap the request in a try clause in case we receive an error. Write the Data
+        # to a temporary file, because we will need to do some additional parsing before
+        # appending to our primary data file.
         try:
             with open(TMPDATAFILE, 'w+') as tmp:
                 tmp.write(requests.get(URL, params=params).text)
@@ -57,17 +58,26 @@ def main():
             time.sleep(65)
             continue
 
+        # if the data was successfully retrieved and written to the temoprary file, then
+        # we load the data and add a ticker field to each line before writing to the main
+        # data file
         with open(TMPDATAFILE, 'r') as tmp:
             for j, line in enumerate(tmp.readlines(), start=0):
+                # if this is the first ticker we've scraped, then we need to add the new
+                # 'ticker' field to the very top of the file
                 if j == 0 and i == 0:
                     line = "%s,%s" % ("ticker", line)
+                # We don't need the field names of every subsequent ticker we scrape, so
+                # we continue
                 elif j == 0 and i != 0:
                     continue
+                # add the ticker symbol to the beginning of each data entry
                 else:
                     line = "%s,%s" % (ticker, line)
+                # append the entry to the main data file
                 with open(RAWDATAFILE, 'a+') as f:
                     f.write(line)
-
+        # sleep for a while before pulling another data set
         time.sleep(20)
 
 def get_tickers():
