@@ -30,7 +30,7 @@ def main():
     # Get a list of tickers that we want to retrieve
     tickers = get_tickers()
     # iterate through a list of tickers and retrieve historical data
-    for i, ticker in enumerate(tickers[:3], start=0):
+    for i, ticker in enumerate(tickers, start=0):
         extra = {'ticker':ticker}
         # abort if we encounter more than 10 errors
         if errors > 10:
@@ -97,7 +97,7 @@ def main():
                 with open(RAWDATAFILE, 'a+') as f:
                     f.write(line)
         # sleep for a while before pulling another data set
-        time.sleep(1)
+        time.sleep(10)
 
 def get_tickers():
     """
